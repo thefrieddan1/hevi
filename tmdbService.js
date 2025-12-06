@@ -130,17 +130,30 @@ export const getActorsWithMultipleCharacters = () => {
 
 /**
  * Helper function to normalize character names
- * E.g., "Bruce Banner / The Hulk" -> "Bruce Banner"
- * E.g., "Bruce Banner (uncredited)" -> "Bruce Banner"
+ * Removes variations like ranks, titles, nicknames, uncredited tags, and aliases
+ * Examples:
+ *   "Lt. Col. James 'Rhodey' Rhodes" -> "James Rhodes"
+ *   "Bruce Banner / The Hulk" -> "Bruce Banner"
+ *   "Bruce Banner (uncredited)" -> "Bruce Banner"
+ *   "Captain America / Steve Rogers" -> "Captain America"
  */
 const normalizeCharacterName = (charName) => {
     // First, split on " / " and take the first part
     // This handles cases like "Bruce Banner / The Hulk" -> "Bruce Banner"
     let normalized = charName.split(' / ')[0].trim();
 
-    // Then remove "(uncredited)" suffix if present
-    // This handles cases like "Bruce Banner (uncredited)" -> "Bruce Banner"
+    // Remove "(uncredited)" suffix if present
     normalized = normalized.replace(/\s*\(uncredited\)\s*$/i, '').trim();
+
+    // Remove military ranks and titles
+    // Matches: Lt., Lt. Col., Colonel, Lieutenant, Col., Captain, Sgt., etc.
+    normalized = normalized.replace(/^(Lt\.\s*Col\.|Lieutenant\s+Colonel|Col\.|Colonel|Lt\.|Lieutenant|Sgt\.|Sergeant|Captain|Major|General)\s+/i, '').trim();
+
+    // Remove quoted nicknames like 'Rhodey', "Tony", etc.
+    normalized = normalized.replace(/\s*['""][^'"'"]+['""]?\s*/g, ' ').trim();
+
+    // Clean up extra whitespace
+    normalized = normalized.replace(/\s+/g, ' ').trim();
 
     return normalized;
 };
