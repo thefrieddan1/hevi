@@ -6,9 +6,9 @@ A RESTful API service that provides insights into Marvel movies and actors using
 
 This application fetches movie credits data from TMDB for a curated list of Marvel movies and actors, then provides three analytical endpoints:
 
-1. **Movies Per Actor** - Which Marvel movies did each actor appear in?
-2. **Actors with Multiple Characters** - Which actors played more than one Marvel character?
-3. **Characters with Multiple Actors** - Which characters were portrayed by different actors?
+1. **Movies Per Actor** - Which Marvel movies did each target actor appear in?
+2. **Actors with Multiple Characters** - Which target actors played more than one distinct Marvel character (with smart character name normalization)?
+3. **Characters with Multiple Actors** - Which characters were portrayed by different actors, where at least one actor is in the target list?
 
 ## 🚀 How to Run the Code
 
@@ -43,9 +43,9 @@ The server will start on `http://localhost:3000`. During startup, it will automa
 
 Once the server is running, you can access:
 
-- **GET** `/moviesPerActor` - Returns a mapping of actors to their movies
-- **GET** `/actorsWithMultipleCharacters` - Returns actors who played multiple characters
-- **GET** `/charactersWithMultipleActors` - Returns characters played by multiple actors
+- **GET** `/moviesPerActor` - Returns a mapping of target actors to their movies
+- **GET** `/actorsWithMultipleCharacters` - Returns target actors who played multiple distinct characters (normalized)
+- **GET** `/charactersWithMultipleActors` - Returns characters played by multiple actors (where at least one is a target actor)
 
 #### Example Requests
 
@@ -85,8 +85,9 @@ This project demonstrates several key architectural decisions for scalability an
 
 - **Data Caching**: Movie credits are fetched once at startup and stored in memory (`CACHED_DATA`), eliminating redundant API calls for every query
 - **Parallel API Requests**: All TMDB movie credits are fetched concurrently using `Promise.all()`, reducing total fetch time from sequential O(n) to parallel O(1) relative to the slowest request
-- **Filtered Data Storage**: Only actors specified in `dataForQuestions.js` are cached, significantly reducing memory footprint (24 actors vs. potentially hundreds)
+- **Comprehensive Data Storage**: All cast members from target movies are cached to enable character recasting detection (endpoint 3), while endpoints 1 & 2 filter to target actors only
 - **O(n) Query Complexity**: All three endpoint queries run in linear time, using single-pass iterations over the cached data
+- **Smart Character Normalization**: Character names are normalized to handle variations (military ranks, aliases, uncredited tags), ensuring accurate multi-character detection
 
 #### 2. **Scalability Features**
 
@@ -119,6 +120,17 @@ This project demonstrates several key architectural decisions for scalability an
 - **Error Handling**: Graceful degradation when individual API requests fail
 - **Clean Code**: Well-documented functions with single responsibilities
 - **ES6 Modules**: Modern import/export syntax for better tree-shaking and dependency management
+
+#### 5. **Character Name Normalization**
+
+To accurately detect when actors play multiple characters or when characters are recast, the system implements intelligent character name normalization:
+
+- **Alias Handling**: `"Bruce Banner / The Hulk"` → `"Bruce Banner"` (takes first name before " / ")
+- **Uncredited Tags**: `"Nick Fury (uncredited)"` → `"Nick Fury"` (removes uncredited suffix)
+- **Military Ranks**: `"Lt. Col. James 'Rhodey' Rhodes"` → `"James Rhodes"` (removes ranks like Lt., Colonel, etc.)
+- **Nicknames**: Removes quoted nicknames like `'Rhodey'` to get the canonical name
+
+This ensures variations like "Tony Stark", "Tony Stark (uncredited)", and "Tony Stark / Iron Man" are all treated as the same character, while truly different characters like "Johnny Storm" and "Erik Killmonger" (both played by Michael B. Jordan) are correctly identified as distinct.
 
 ### Potential Future Enhancements
 
