@@ -119,32 +119,59 @@ export const getActorsWithMultipleCharacters = () => {
 };
 
 /**
+ * Helper function to normalize character names
+ * E.g., "Bruce Banner / The Hulk" -> "Bruce Banner"
+ */
+const normalizeCharacterName = (charName) => {
+    // Split on " / " and take the first part as the canonical name
+    // This handles cases like "Bruce Banner / The Hulk" and "Bruce Banner"
+    const parts = charName.split(' / ');
+    return parts[0].trim();
+};
+
+/**
  * Q3: Roles (characters) that were played by more than one actor
  */
 export const getCharactersWithMultipleActors = () => {
-    const charMap = {}; // { CharacterName: [ { movieName, actorName } ] }
+    const charMap = {}; // { NormalizedCharacterName: [ { movieName, actorName, originalCharName } ] }
 
-    // Group by Character
+    // Group by Normalized Character Name
     CACHED_DATA.forEach(record => {
-        // Clean character name slightly (remove / dividers if necessary, but keep simple for now)
-        const charName = record.characterName;
+        const originalCharName = record.characterName;
+        const normalizedCharName = normalizeCharacterName(originalCharName);
 
-        if (!charMap[charName]) {
-            charMap[charName] = [];
+        if (!charMap[normalizedCharName]) {
+            charMap[normalizedCharName] = [];
         }
-        charMap[charName].push({
+        charMap[normalizedCharName].push({
             movieName: record.movieName,
-            actorName: record.actorName
+            actorName: record.actorName,
+            originalCharName: originalCharName
         });
     });
 
     const result = {};
+    let multiActorCount = 0;
+    let passedFilterCount = 0;
 
-    for (const [charName, appearances] of Object.entries(charMap)) {
+    for (const [normalizedCharName, appearances] of Object.entries(charMap)) {
         const uniqueActors = new Set(appearances.map(a => a.actorName));
 
+        // Criteria 1: Does the character have > 1 actor?
         if (uniqueActors.size > 1) {
-            result[charName] = appearances;
+            multiActorCount++;
+
+            // Criteria 2: Does at least one of those actors appear in the TARGET_ACTORS list?
+            const hasTargetActor = Array.from(uniqueActors).some(actor => actorsList.includes(actor));
+
+            if (hasTargetActor) {
+                passedFilterCount++;
+                result[normalizedCharName] = appearances.map(a => ({
+                    movieName: a.movieName,
+                    actorName: a.actorName,
+                    characterName: a.originalCharName
+                }));
+            }
         }
     }
 
