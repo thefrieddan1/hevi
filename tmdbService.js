@@ -84,7 +84,7 @@ export const getMoviesPerActor = () => {
 
 /**
  * Q2: Actors who played more than one Marvel character
- * Checks entire cast of the provided movies (discovery mode).
+ * Filters to only include actors from the target actors list.
  */
 export const getActorsWithMultipleCharacters = () => {
     const actorMap = {}; // { ActorName: [ { movieName, characterName } ] }
@@ -100,10 +100,15 @@ export const getActorsWithMultipleCharacters = () => {
         });
     });
 
-    // Filter for actors with > 1 unique character name
+    // Filter for actors with > 1 unique character name AND who are in the target actors list
     const result = {};
 
     for (const [actor, roles] of Object.entries(actorMap)) {
+        // Only process actors who are in our target list
+        if (!actorsList.includes(actor)) {
+            continue;
+        }
+
         // Create a Set of character names to check uniqueness (ignoring movie context)
         const uniqueCharacters = new Set(roles.map(r => r.characterName));
 
