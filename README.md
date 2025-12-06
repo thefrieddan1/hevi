@@ -21,7 +21,7 @@ This application fetches movie credits data from TMDB for a curated list of Marv
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/thefrieddan1/hevi
 cd vi_labs
 ```
 
