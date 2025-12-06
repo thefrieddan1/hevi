@@ -85,9 +85,10 @@ export const getMoviesPerActor = () => {
 /**
  * Q2: Actors who played more than one Marvel character
  * Filters to only include actors from the target actors list.
+ * Normalizes character names to avoid counting variations as different characters.
  */
 export const getActorsWithMultipleCharacters = () => {
-    const actorMap = {}; // { ActorName: [ { movieName, characterName } ] }
+    const actorMap = {}; // { ActorName: [ { movieName, characterName, normalizedCharName } ] }
 
     // Group by Actor
     CACHED_DATA.forEach(record => {
@@ -96,7 +97,8 @@ export const getActorsWithMultipleCharacters = () => {
         }
         actorMap[record.actorName].push({
             movieName: record.movieName,
-            characterName: record.characterName
+            characterName: record.characterName,
+            normalizedCharName: normalizeCharacterName(record.characterName)
         });
     });
 
@@ -109,14 +111,17 @@ export const getActorsWithMultipleCharacters = () => {
             continue;
         }
 
-        // Create a Set of character names to check uniqueness (ignoring movie context)
-        const uniqueCharacters = new Set(roles.map(r => r.characterName));
+        // Create a Set of NORMALIZED character names to check uniqueness
+        // This treats "Bruce Banner", "Bruce Banner (uncredited)", and "Bruce Banner / The Hulk" as the same
+        const uniqueCharacters = new Set(roles.map(r => r.normalizedCharName));
 
-        // Logic: We are looking for DIFFERENT characters. 
-        // Note: TMDB often returns "Self" or "Uncredited". We might want to filter those in a real app.
-        // For this assignment, we strictly count distinct character strings.
+        // Logic: We are looking for DIFFERENT characters after normalization
         if (uniqueCharacters.size > 1) {
-            result[actor] = roles;
+            // Return the original character names for reference
+            result[actor] = roles.map(r => ({
+                movieName: r.movieName,
+                characterName: r.characterName
+            }));
         }
     }
 
@@ -126,12 +131,18 @@ export const getActorsWithMultipleCharacters = () => {
 /**
  * Helper function to normalize character names
  * E.g., "Bruce Banner / The Hulk" -> "Bruce Banner"
+ * E.g., "Bruce Banner (uncredited)" -> "Bruce Banner"
  */
 const normalizeCharacterName = (charName) => {
-    // Split on " / " and take the first part as the canonical name
-    // This handles cases like "Bruce Banner / The Hulk" and "Bruce Banner"
-    const parts = charName.split(' / ');
-    return parts[0].trim();
+    // First, split on " / " and take the first part
+    // This handles cases like "Bruce Banner / The Hulk" -> "Bruce Banner"
+    let normalized = charName.split(' / ')[0].trim();
+
+    // Then remove "(uncredited)" suffix if present
+    // This handles cases like "Bruce Banner (uncredited)" -> "Bruce Banner"
+    normalized = normalized.replace(/\s*\(uncredited\)\s*$/i, '').trim();
+
+    return normalized;
 };
 
 /**
