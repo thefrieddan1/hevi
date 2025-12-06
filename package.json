@@ -4,12 +4,20 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "test": "jest"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "axios": "^1.7.9"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "babel-jest": "^29.7.0",
+    "@babel/core": "^7.23.5",
+    "@babel/preset-env": "^7.23.5"
   },
   "type": "module"
 }
